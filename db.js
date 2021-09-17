@@ -44,8 +44,6 @@ db.createBankClientTable = async (connection) => {
                         `lastname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
                         `country_code` char(5) COLLATE utf8_swedish_ci NOT NULL,\
                         `default_bank_account_number` bigint(18) NOT NULL,\
-                        `amount` decimal(10,2) NOT NULL,\
-                        `currency` char(10) COLLATE utf8_swedish_ci NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -59,11 +57,11 @@ db.createBankAccountsTable = async (connection) => {
     try {
         const sql = 'CREATE TABLE IF NOT EXISTS `Saskaitos` (\
                         `id` int(10) NOT NULL AUTO_INCREMENT,\
-                        `firstname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
-                        `lastname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
+                        `user_id` int(10) NOT NULL,\
                         `country_code` char(5) COLLATE utf8_swedish_ci NOT NULL,\
-                        `bank_account_numbers` int(18) NOT NULL,\
+                        `bank_account_numbers` bigint(18) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
+                        `currency` char(10) COLLATE utf8_swedish_ci NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
