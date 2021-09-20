@@ -1,6 +1,13 @@
 class Validation {
 
     static isValidName(name) {
+        const abc = 'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM'
+        for (const n of name) {
+            if (!abc.includes(n)) {
+                return false
+            }
+            return true
+        }
         if (name === undefined ||
             typeof name !== 'string' ||
             name.length < 2 ||
@@ -12,7 +19,6 @@ class Validation {
 
 
     static isUpperCase(letter) {
-
         return letter === letter.toUpperCase();
     }
 
@@ -26,6 +32,16 @@ class Validation {
             return false
         }
         return true
+    }
+
+    static isValidAmount = (amount) => {
+        if (typeof amount !== 'number' ||
+            amount < 0 ||
+            !isFinite(amount)) {
+            return false
+        }
+        return true
+
     }
 
     static isText = (text) => {
