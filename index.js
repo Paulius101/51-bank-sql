@@ -59,7 +59,7 @@ app.init = async () => {
 
 
 
-    const deleteAccount = await Bank.deleteAccount(conn, 3)
+    const deleteAccount = await Bank.deleteUser(conn, 3)
     console.log(deleteAccount);
 }
 
@@ -78,3 +78,4 @@ module.exports = app;
 
 // - banko istorija negali būti trinama:
 // --- turi matytis visi atlikti pavedimai, įskaitymai ir išskaitymai kur matyti kas, kada ir kokią operaciją atliko;
+// sukurimas ir deaktyvavimas saskaitu

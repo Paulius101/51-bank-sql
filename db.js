@@ -63,8 +63,8 @@ db.createBankAccountsTable = async (connection) => {
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
-        // const foreignKey = 'ALTER TABLE `saskaitos` ADD FOREIGN KEY(`user_id`) REFERENCES`klientai`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT';
-        // await connection.execute(foreignKey)
+        const foreignKey = 'ALTER TABLE `saskaitos` ADD CONSTRAINT `klientai ID constraint` FOREIGN KEY (`user_id`) REFERENCES `klientai`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;';
+        await connection.execute(foreignKey);
     } catch (error) {
         console.log('Nepavyko sukurti banko klientu saskaitu lenteles');
         console.log(error);

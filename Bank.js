@@ -1,15 +1,10 @@
 const Bank = {};
 const Validation = require('./Validation');
+
 /**
  * 
- * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
- * @param {string} currency Valiuta.
- * @param {string} firstname Vardas.
- * @param {string} lastname Pavarde.
- * @param {string} countryCode Miesto kodas (trumpas teksas)
- * @param {number} defaultAcc Banko saskaitos skaitine dalis.
- * @param {number} amount Pinigu kiekis (skaicius)
- * @returns {Promise<string>} Tekstas parodantis, kurie accountai buvo uzregistruoti.
+ * @param {number} length Atsitiktinio skaiciaus ilgis, default = 14.
+ * @returns {<string>} Grazina atsitiktine tvarka sugeneruota 14 skaitmenu teksta.
  */
 Bank.createRandomNumber = (length = 14) => {
     const possibleCharacters = '0123456789';
@@ -21,6 +16,15 @@ Bank.createRandomNumber = (length = 14) => {
     return str
 }
 
+/**
+ * 
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {string} currency Valiuta.
+ * @param {string} firstname Vardas.
+ * @param {string} lastname Pavarde.
+ * @param {string} countryCode Miesto kodas (trumpas teksas)
+ * @returns {Promise<string>} Tekstas parodantis, koks accountas buvo uzregistruotas.
+ */
 Bank.create = async (connection, currency, firstname, lastname, countryCode) => {
     if (!Validation.isValidName(firstname)) {
         return `ERROR: not a valid name`
@@ -63,6 +67,13 @@ Bank.create = async (connection, currency, firstname, lastname, countryCode) => 
     return `${firstname} ${lastname} was successfully registered in client list with ${countryCode}${generatedAccount}.`
 }
 
+/**
+ * 
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {string} userID Vartotojo ID.
+ * @param {string} currency Valiuta.
+ * @returns {<string>} Grazina informacija apie prideta paskyra.
+ */
 Bank.addAccount = async (connection, userID, currency) => {
     if (!Validation.IDisValid(userID)) {
         return `ERROR: user ID is not valid`
@@ -74,8 +85,6 @@ Bank.addAccount = async (connection, userID, currency) => {
     if (!availableCurrencies.includes(currency)) {
         return 'ERROR: currency type not allowed'
     }
-
-    //patikrinti ar affected rows ===1
 
 
     const countryCode = 'SELECT country_code FROM klientai WHERE id=' + userID;
@@ -94,6 +103,13 @@ Bank.addAccount = async (connection, userID, currency) => {
     return `New account ${generatedAccount} of client, by ID = ${userID}, has been successfully registered with 0 ${currency}.`
 }
 
+/**
+ * 
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {number} accountID Paskyros ID.
+ * @param {number} amount Pinigu kiekis.
+ * @returns {<string>} Pateikia informacija apie prie paskyros pridetu pinigu kieki.
+ */
 Bank.depositMoney = async (connection, accountID, amount) => {
     if (!Validation.IDisValid(accountID)) {
         return `ERROR: account ID is not valid`
@@ -110,10 +126,18 @@ Bank.depositMoney = async (connection, accountID, amount) => {
     const [result1] = await connection.execute(currency);
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
     const [result3] = await connection.execute(balance);
+
     return `${amount} ${result1[0].currency} have been added to bank account, by ID = ${accountID}, making a total of ${result3[0].amount} ${result1[0].currency}`
 
 }
 
+/**
+ * 
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {number} accountID Paskyros ID.
+ * @param {number} amount Pinigu kiekis.
+ * @returns {<string>} Pateikia informacija apie is paskyros isimtu pinigu kieki.
+ */
 Bank.withdrawMoney = async (connection, accountID, amount) => {
     if (!Validation.IDisValid(accountID)) {
         return `ERROR: account ID is not valid`
@@ -135,10 +159,19 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
     const [result2] = await connection.execute(currency);
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
     const [result3] = await connection.execute(balance);
+
     return `${amount} ${result2[0].currency} have been withdrawn from bank account, by ID = ${accountID}, making a total of ${result3[0].amount} ${result2[0].currency}`
 
 }
 
+/**
+ * 
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {number} sendAccountID Siuntejo paskyros ID.
+ * @param {number} receivAccountID Gavejo paskyros ID.
+ * @param {number} amount Pinigu kiekis.
+ * @returns {<string>} Grazina teksta rodanti kokia suma pinigu buvo pervesta is vienos saskaitos i kita.
+ */
 Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) => {
     if (!Validation.IDisValid(sendAccountID)) {
         return `ERROR: account ID is not valid`
@@ -165,10 +198,17 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
     const [info] = await connection.execute(senderAccount);
     const receiverAccount = 'SELECT saskaitos.bank_account_numbers as num2 FROM saskaitos WHERE saskaitos.id=' + receivAccountID;
     const [info1] = await connection.execute(receiverAccount);
+
     return `${amount} EUR have been sent from ${info[0].num1} to ${info1[0].num2}`
 }
 
-Bank.deleteAccount = async (connection, usersID) => {
+/**
+ * 
+ * @param {Object} connection Objektas, su kuriuo kvieciame duombazes mainpuliavimo metodus.
+ * @param {number} usersID Vartotojo ID.
+ * @returns {<string>} Pasako kokio vartotojo paskyra buvo istrinta.
+ */
+Bank.deleteUser = async (connection, usersID) => {
     if (!Validation.IDisValid(usersID)) {
         return `ERROR: user ID is not valid`
     }
@@ -189,11 +229,17 @@ Bank.deleteAccount = async (connection, usersID) => {
     const name = 'SELECT firstname, lastname FROM klientai WHERE klientai.id =' + usersID;
     const [result2] = await connection.execute(name)
 
+    const deleteAccSaskaitos = 'DELETE FROM saskaitos WHERE saskaitos.user_id =' + usersID;
+    const [result1] = await connection.execute(deleteAccSaskaitos)
+
+    if (resultas.length !== result1.affectedRows) {
+        return 'ERROR: at least one bank account still exists, hence can not delete the user account.'
+    }
+
     const deleteAccKlientai = 'DELETE FROM klientai WHERE klientai.id =' + usersID;
     const [result] = await connection.execute(deleteAccKlientai);
 
-    const deleteAccSaskaitos = 'DELETE FROM saskaitos WHERE saskaitos.user_id =' + usersID;
-    const [result1] = await connection.execute(deleteAccSaskaitos)
+
 
 
 
