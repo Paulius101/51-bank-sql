@@ -46,7 +46,7 @@ db.createBankClientTable = async (connection) => {
                         `lastname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
                         `country_code` char(5) COLLATE utf8_swedish_ci NOT NULL,\
                         `active` char(5) COLLATE utf8_swedish_ci NOT NULL DEFAULT "TRUE",\
-                        `time_stamp` TIMESTAMP NOT NULL,\
+                        `open_date` TIMESTAMP NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -65,7 +65,8 @@ db.createBankAccountsTable = async (connection) => {
                         `amount` decimal(10,2) NOT NULL,\
                         `currency` char(10) COLLATE utf8_swedish_ci NOT NULL,\
                         `active` char(5) COLLATE utf8_swedish_ci NOT NULL DEFAULT "TRUE",\
-                        `time_stamp` TIMESTAMP NOT NULL,\
+                        `open_date` TIMESTAMP NOT NULL,\
+                        `close_date` TIMESTAMP NULL DEFAULT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -80,12 +81,12 @@ db.createBankAccountsTable = async (connection) => {
 
 db.createDepositWithdrawTable = async (connection) => {
     try {
-        const sql = 'CREATE TABLE IF NOT EXISTS `deposit/withdraw` (\
+        const sql = 'CREATE TABLE IF NOT EXISTS `log_deposit_withdraw` (\
                         `id` int(10) NOT NULL AUTO_INCREMENT,\
                         `account_id` int(10) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
                         `type` char(10) NOT NULL,\
-                        `time_stamp` TIMESTAMP NOT NULL,\
+                        `time_stamp` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -97,12 +98,12 @@ db.createDepositWithdrawTable = async (connection) => {
 }
 db.createTransactionsTable = async (connection) => {
     try {
-        const sql = 'CREATE TABLE IF NOT EXISTS `transactions` (\
+        const sql = 'CREATE TABLE IF NOT EXISTS `log_transactions` (\
                         `id` int(10) NOT NULL AUTO_INCREMENT,\
                         `sender_account_id` int(10) NOT NULL,\
                         `receiver_account_id` int(10) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
-                        `time_stamp` TIMESTAMP NOT NULL,\
+                        `time_stamp` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);

@@ -8,7 +8,7 @@ const Validation = require('../validations/Validation');
  * @param {number} amount Pinigu kiekis.
  */
 Transactions.deposit = async (connection, accountID, amount) => {
-    const insert = 'INSERT INTO `deposit/withdraw` (id, account_id, amount, type)\
+    const insert = 'INSERT INTO `log_deposit_withdraw` (id, account_id, amount, type)\
 VALUES (NULL, "'+ accountID + '", "' + amount + '", "DEPOSIT")';
     const [result] = await connection.execute(insert);
 }
@@ -20,7 +20,7 @@ VALUES (NULL, "'+ accountID + '", "' + amount + '", "DEPOSIT")';
  * @param {number} amount Pinigu kiekis.
  */
 Transactions.withdraw = async (connection, accountID, amount) => {
-    const insert = 'INSERT INTO `deposit/withdraw` (id, account_id, amount, type)\
+    const insert = 'INSERT INTO `log_deposit_withdraw` (id, account_id, amount, type)\
 VALUES (NULL, "'+ accountID + '", "' + amount + '", "WITHDRAW")';
     const [result] = await connection.execute(insert);
 }
@@ -33,7 +33,7 @@ VALUES (NULL, "'+ accountID + '", "' + amount + '", "WITHDRAW")';
  * @param {number} amount Pinigu kiekis.
  */
 Transactions.transfer = async (connection, senderID, receiverID, amount) => {
-    const insert = 'INSERT INTO transactions (id, sender_account_id, receiver_account_id, amount)\
+    const insert = 'INSERT INTO log_transactions (id, sender_account_id, receiver_account_id, amount)\
 VALUES (NULL, "'+ senderID + '","' + receiverID + '", "' + amount + '")';
     const [result] = await connection.execute(insert);
 }

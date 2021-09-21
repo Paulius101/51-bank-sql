@@ -2,6 +2,16 @@ const Bank = {};
 const Validation = require('../validations/Validation');
 const Transactions = require('./Transactions');
 
+
+Bank.formatDate = async (time) => {
+    const d = new Date(time);
+    const dformat = [d.getFullYear(), d.getMonth() + 1,
+    d.getDate(),].join('-') + ' ' +
+        [d.getHours(),
+        d.getMinutes(),
+        d.getSeconds()].join(':');
+    return dformat
+}
 /**
  * 
  * @param {number} length Atsitiktinio skaiciaus ilgis, default = 14.
@@ -130,11 +140,16 @@ Bank.depositMoney = async (connection, accountID, amount) => {
         return `ERROR: account by ID = ${accountID} is not active!`
     }
 
-    //Atnaujiname saskaitos likuti.
+    //Atnaujiname saskaitos likuti ir time_stamp
     const deposit = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
     const [result] = await connection.execute(deposit);
     const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=' + accountID;
     const [result1] = await connection.execute(currency);
+
+
+    if (result.affectedRows !== 1) {
+        return 'ERROR: account failed to update the balance.'
+    }
 
     //Irasome sia operacija i tam skirta lentele.
     Transactions.deposit(connection, accountID, amount);
@@ -166,7 +181,7 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
     //Patikriname ar saskaita yra aktyvi.
     const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
     const [check] = await connection.execute(isActive);
-    if (check.active === 'FALSE') {
+    if (check[0].active !== 'TRUE') {
         return `ERROR: account by ID = ${accountID} is not active!`
     }
 
@@ -180,6 +195,9 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
     //Atnaujiname saskaitos likuti.
     const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
     const [result1] = await connection.execute(withdraw);
+    if (result1.affectedRows !== 1) {
+        return 'ERROR: account failed to update the balance.'
+    }
 
 
     //Irasome sia operacija i tam skirta lentele.
@@ -238,9 +256,9 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
 
     //Atnaujiname tiek gavejo tiek siuntejo saskaitu likucius.
     const sender = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + sendAccountID;
-    const [result] = await connection.execute(sender);
+    await connection.execute(sender);
     const receiver = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + receivAccountID;
-    const [result1] = await connection.execute(receiver);
+    await connection.execute(receiver);
 
     //Irasome si pervedima i tam skirta lentele.
     Transactions.transfer(connection, sendAccountID, receivAccountID, amount)
@@ -293,9 +311,10 @@ Bank.deleteUser = async (connection, usersID) => {
 
     //Pakeiciame paskyros aktyvuma i FALSE.
     const deleteAccKlientai = 'UPDATE klientai SET active = "FALSE" WHERE klientai.id =' + usersID;
-    const [result] = await connection.execute(deleteAccKlientai);
+    await connection.execute(deleteAccKlientai);
 
-
+    const closeDate = 'UPDATE saskaitos SET close_date = "' + await Bank.formatDate(Date.now()) + '" WHERE saskaitos.user_id =' + usersID;
+    await connection.execute(closeDate);
 
 
 
