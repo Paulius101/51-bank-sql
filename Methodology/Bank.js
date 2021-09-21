@@ -1,5 +1,6 @@
 const Bank = {};
-const Validation = require('./Validation');
+const Validation = require('../validations/Validation');
+const Transactions = require('./Transactions');
 
 /**
  * 
@@ -124,6 +125,9 @@ Bank.depositMoney = async (connection, accountID, amount) => {
     const [result] = await connection.execute(deposit);
     const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=1';
     const [result1] = await connection.execute(currency);
+
+    Transactions.deposit(connection, accountID, amount);
+
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
     const [result3] = await connection.execute(balance);
 
@@ -155,6 +159,9 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
 
     const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
     const [result1] = await connection.execute(withdraw);
+
+    Transactions.withdraw(connection, accountID, amount)
+
     const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=1';
     const [result2] = await connection.execute(currency);
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
@@ -193,6 +200,8 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
     const [result] = await connection.execute(sender);
     const receiver = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + receivAccountID;
     const [result1] = await connection.execute(receiver);
+
+    Transactions.transfer(connection, sendAccountID, receivAccountID, amount)
 
     const senderAccount = 'SELECT saskaitos.bank_account_numbers as num1 FROM saskaitos WHERE saskaitos.id=' + sendAccountID;
     const [info] = await connection.execute(senderAccount);

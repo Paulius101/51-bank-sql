@@ -7,6 +7,8 @@ db.init = async ({ database, host, user }) => {
 
     await db.createBankClientTable(connection);
     await db.createBankAccountsTable(connection);
+    await db.createDepositWithdrawTable(connection);
+    await db.createTransactionsTable(connection);
 
     return connection;
 }
@@ -43,6 +45,7 @@ db.createBankClientTable = async (connection) => {
                         `firstname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
                         `lastname` char(20) COLLATE utf8_swedish_ci NOT NULL,\
                         `country_code` char(5) COLLATE utf8_swedish_ci NOT NULL,\
+                        `time_stamp` TIMESTAMP NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -60,6 +63,7 @@ db.createBankAccountsTable = async (connection) => {
                         `bank_account_numbers` char(16) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
                         `currency` char(10) COLLATE utf8_swedish_ci NOT NULL,\
+                        `time_stamp` TIMESTAMP NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
@@ -72,6 +76,39 @@ db.createBankAccountsTable = async (connection) => {
     }
 }
 
-module.exports = db;
+db.createDepositWithdrawTable = async (connection) => {
+    try {
+        const sql = 'CREATE TABLE IF NOT EXISTS `deposit/withdraw` (\
+                        `id` int(10) NOT NULL AUTO_INCREMENT,\
+                        `account_id` int(10) NOT NULL,\
+                        `amount` decimal(10,2) NOT NULL,\
+                        `type` char(10) NOT NULL,\
+                        `time_stamp` TIMESTAMP NOT NULL,\
+                        PRIMARY KEY(`id`)\
+                    ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
+        await connection.execute(sql);
+    } catch (error) {
+        console.log('Nepavyko sukurti pinigu pervedimo lenteles');
+        console.log(error);
+        return error;
+    }
+}
+db.createTransactionsTable = async (connection) => {
+    try {
+        const sql = 'CREATE TABLE IF NOT EXISTS `transactions` (\
+                        `id` int(10) NOT NULL AUTO_INCREMENT,\
+                        `sender_account_id` int(10) NOT NULL,\
+                        `receiver_account_id` int(10) NOT NULL,\
+                        `amount` decimal(10,2) NOT NULL,\
+                        `time_stamp` TIMESTAMP NOT NULL,\
+                        PRIMARY KEY(`id`)\
+                    ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
+        await connection.execute(sql);
+    } catch (error) {
+        console.log('Nepavyko sukurti pinigu pervedimo lenteles');
+        console.log(error);
+        return error;
+    }
+}
 
-// ALTER TABLE `saskaitos` ADD FOREIGN KEY (`user_id`) REFERENCES `klientai`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;\
+module.exports = db;

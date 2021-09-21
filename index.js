@@ -1,5 +1,5 @@
 const db = require('./db');
-const Bank = require('./Bank');
+const Bank = require('./Methodology/Bank');
 
 const app = {}
 
