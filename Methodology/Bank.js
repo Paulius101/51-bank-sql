@@ -8,6 +8,7 @@ const Transactions = require('./Transactions');
  * @returns {<string>} Grazina atsitiktine tvarka sugeneruota 14 skaitmenu teksta.
  */
 Bank.createRandomNumber = (length = 14) => {
+    //Generuojame atsitiktini 14 skaitmenu string.
     const possibleCharacters = '0123456789';
     const possibleCharactersCount = possibleCharacters.length;
     let str = '';
@@ -49,6 +50,7 @@ Bank.create = async (connection, currency, firstname, lastname, countryCode) => 
 
     }
 
+    //Iterpiame kliento informacija i klientai lentele.
     const insertKlientai = 'INSERT INTO klientai (id, firstname, lastname, country_code)\
     VALUES (NULL, "' + firstname + '", "' + lastname + '","' + countryCode + '")';
     const [result] = await connection.execute(insertKlientai);
@@ -57,6 +59,7 @@ Bank.create = async (connection, currency, firstname, lastname, countryCode) => 
         return 'ERROR: saskaita nebuvo sekmingai iregistruota'
     }
 
+    //Iterpiame kliento pirmosios saskaitos informacija i saskaitos lentele.
     let generatedAccount = countryCode + Bank.createRandomNumber();
     const insertSaskaitos = 'INSERT INTO saskaitos (id, user_id, bank_account_numbers, amount, currency)\
     VALUES (NULL,"'+ result.insertId + '", "' + generatedAccount + '", 0 ,"' + currency + '")';
@@ -87,12 +90,12 @@ Bank.addAccount = async (connection, userID, currency) => {
         return 'ERROR: currency type not allowed'
     }
 
-
+    //Susirandame ir susiejame vartotojo (pagal ID) salies koda su atsitiktinai sukurtu saskaitos numeriu.
     const countryCode = 'SELECT country_code FROM klientai WHERE id=' + userID;
     const [result1] = await connection.execute(countryCode)
-    // console.log(result1[0].country_code);
     let generatedAccount = result1[0].country_code + Bank.createRandomNumber();
-    // console.log(generatedAccount);
+
+    //Iterpiame saskaita i saskaitos lentele.
     const insertSaskaitos = 'INSERT INTO saskaitos (id, user_id, bank_account_numbers, amount, currency)\
     VALUES (NULL,"'+ userID + '", "' + generatedAccount + '", 0 ,"' + currency + '")';
     const [result] = await connection.execute(insertSaskaitos);
@@ -120,20 +123,23 @@ Bank.depositMoney = async (connection, accountID, amount) => {
         return 'ERROR: wrong amount format.'
     }
 
+    //Patikriname ar saskaita yra aktyvi.
     const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
     const [check] = await connection.execute(isActive);
     if (check.active === 'FALSE') {
         return `ERROR: account by ID = ${accountID} is not active!`
     }
 
-
+    //Atnaujiname saskaitos likuti.
     const deposit = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
     const [result] = await connection.execute(deposit);
     const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=' + accountID;
     const [result1] = await connection.execute(currency);
 
+    //Irasome sia operacija i tam skirta lentele.
     Transactions.deposit(connection, accountID, amount);
 
+    //Issitraukiame informacija reikalinga return stringui.
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
     const [result3] = await connection.execute(balance);
 
@@ -157,23 +163,29 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
         return 'ERROR: wrong amount format.'
     }
 
+    //Patikriname ar saskaita yra aktyvi.
     const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
     const [check] = await connection.execute(isActive);
     if (check.active === 'FALSE') {
         return `ERROR: account by ID = ${accountID} is not active!`
     }
 
+    //Patikriname ar pakanka pinigu nuemimui.
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
     const [result] = await connection.execute(currentBalance)
     if (result[0].amount < amount) {
         return 'ERROR: insuficient funds.'
     }
 
+    //Atnaujiname saskaitos likuti.
     const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
     const [result1] = await connection.execute(withdraw);
 
+
+    //Irasome sia operacija i tam skirta lentele.
     Transactions.withdraw(connection, accountID, amount)
 
+    //Issitraukiame informacija reikalinga return stringui.
     const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=1';
     const [result2] = await connection.execute(currency);
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
@@ -202,31 +214,39 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
         return 'ERROR: wrong amount format.'
     }
 
+    //Patikriname ar siuntejo saskaita yra aktyvi.
     const isActive1 = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + sendAccountID;
     const [check1] = await connection.execute(isActive1);
     if (check1.active === 'FALSE') {
         return `ERROR: account by ID = ${sendAccountID} is not active!`
     }
 
+    //Patikriname ar gavejo saskaita yra aktyvi.
     const isActive2 = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + receivAccountID;
     const [check2] = await connection.execute(isActive2);
     if (check2.active === 'FALSE') {
         return `ERROR: account by ID = ${receivAccountID} is not active!`
     }
 
+    //Patikriname ar saskaitoje yra ne maziau pinigu nei reikia pervedimui.
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + sendAccountID;
     const [resultas] = await connection.execute(currentBalance)
     if (resultas[0].amount < amount) {
         return 'ERROR: insuficient funds.'
     }
 
+
+    //Atnaujiname tiek gavejo tiek siuntejo saskaitu likucius.
     const sender = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + sendAccountID;
     const [result] = await connection.execute(sender);
     const receiver = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + receivAccountID;
     const [result1] = await connection.execute(receiver);
 
+    //Irasome si pervedima i tam skirta lentele.
     Transactions.transfer(connection, sendAccountID, receivAccountID, amount)
 
+
+    //Issitraukiame reikalinga informacija return stringui.
     const senderAccount = 'SELECT saskaitos.bank_account_numbers as num1 FROM saskaitos WHERE saskaitos.id=' + sendAccountID;
     const [info] = await connection.execute(senderAccount);
     const receiverAccount = 'SELECT saskaitos.bank_account_numbers as num2 FROM saskaitos WHERE saskaitos.id=' + receivAccountID;
@@ -246,6 +266,7 @@ Bank.deleteUser = async (connection, usersID) => {
         return `ERROR: user ID is not valid`
     }
 
+    //Tikriname ar tam tikram userID priklausancios saskaitos turi pinigu.
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE user_id=' + usersID;
     const [resultas] = await connection.execute(currentBalance);
 
@@ -258,10 +279,11 @@ Bank.deleteUser = async (connection, usersID) => {
         return `ERROR: funds found in at least one of the accounts that belong to user ID = ${usersID}.`
     }
 
-
+    //Issitraukiame varda/ pavarde return stringui.
     const name = 'SELECT firstname, lastname FROM klientai WHERE klientai.id =' + usersID;
     const [result2] = await connection.execute(name)
 
+    //Pakeiciame saskaitos aktyvuma i FALSE.
     const deleteAccSaskaitos = 'UPDATE saskaitos SET active = "FALSE" WHERE saskaitos.user_id =' + usersID;
     const [result1] = await connection.execute(deleteAccSaskaitos)
 
@@ -269,6 +291,7 @@ Bank.deleteUser = async (connection, usersID) => {
         return 'ERROR: at least one bank account still exists, hence can not delete the user account.'
     }
 
+    //Pakeiciame paskyros aktyvuma i FALSE.
     const deleteAccKlientai = 'UPDATE klientai SET active = "FALSE" WHERE klientai.id =' + usersID;
     const [result] = await connection.execute(deleteAccKlientai);
 
