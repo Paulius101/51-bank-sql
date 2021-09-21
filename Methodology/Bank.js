@@ -120,10 +120,16 @@ Bank.depositMoney = async (connection, accountID, amount) => {
         return 'ERROR: wrong amount format.'
     }
 
+    const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
+    const [check] = await connection.execute(isActive);
+    if (check.active === 'FALSE') {
+        return `ERROR: account by ID = ${accountID} is not active!`
+    }
+
 
     const deposit = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
     const [result] = await connection.execute(deposit);
-    const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=1';
+    const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=' + accountID;
     const [result1] = await connection.execute(currency);
 
     Transactions.deposit(connection, accountID, amount);
@@ -149,6 +155,12 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
 
     if (!Validation.isValidAmount(amount)) {
         return 'ERROR: wrong amount format.'
+    }
+
+    const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
+    const [check] = await connection.execute(isActive);
+    if (check.active === 'FALSE') {
+        return `ERROR: account by ID = ${accountID} is not active!`
     }
 
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
@@ -188,6 +200,18 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
     }
     if (!Validation.isValidAmount(amount)) {
         return 'ERROR: wrong amount format.'
+    }
+
+    const isActive1 = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + sendAccountID;
+    const [check1] = await connection.execute(isActive1);
+    if (check1.active === 'FALSE') {
+        return `ERROR: account by ID = ${sendAccountID} is not active!`
+    }
+
+    const isActive2 = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + receivAccountID;
+    const [check2] = await connection.execute(isActive2);
+    if (check2.active === 'FALSE') {
+        return `ERROR: account by ID = ${receivAccountID} is not active!`
     }
 
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + sendAccountID;
@@ -238,14 +262,14 @@ Bank.deleteUser = async (connection, usersID) => {
     const name = 'SELECT firstname, lastname FROM klientai WHERE klientai.id =' + usersID;
     const [result2] = await connection.execute(name)
 
-    const deleteAccSaskaitos = 'DELETE FROM saskaitos WHERE saskaitos.user_id =' + usersID;
+    const deleteAccSaskaitos = 'UPDATE saskaitos SET active = "FALSE" WHERE saskaitos.user_id =' + usersID;
     const [result1] = await connection.execute(deleteAccSaskaitos)
 
     if (resultas.length !== result1.affectedRows) {
         return 'ERROR: at least one bank account still exists, hence can not delete the user account.'
     }
 
-    const deleteAccKlientai = 'DELETE FROM klientai WHERE klientai.id =' + usersID;
+    const deleteAccKlientai = 'UPDATE klientai SET active = "FALSE" WHERE klientai.id =' + usersID;
     const [result] = await connection.execute(deleteAccKlientai);
 
 
