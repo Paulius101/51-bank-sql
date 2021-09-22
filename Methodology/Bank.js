@@ -12,6 +12,13 @@ Bank.formatDate = async (time) => {
         d.getSeconds()].join(':');
     return dformat
 }
+
+Bank.addCurrency = async (connection, currency) => {
+    const addCurrency = 'INSERT INTO valiutos (currency) VALUES ("' + currency + '")';
+    await connection.execute(addCurrency);
+    return `${currency} currency is available now!`
+}
+
 /**
  * 
  * @param {number} length Atsitiktinio skaiciaus ilgis, default = 14.
@@ -63,18 +70,22 @@ Bank.create = async (connection, currency, firstname, lastname, countryCode) => 
     //Iterpiame kliento informacija i klientai lentele.
     const insertKlientai = 'INSERT INTO klientai (id, firstname, lastname, country_code)\
     VALUES (NULL, "' + firstname + '", "' + lastname + '","' + countryCode + '")';
-    const [result] = await connection.execute(insertKlientai);
+    const [insertedKlientas] = await connection.execute(insertKlientai);
     // console.log(result);
-    if (result.affectedRows !== 1) {
+    if (insertedKlientas.affectedRows !== 1) {
         return 'ERROR: saskaita nebuvo sekmingai iregistruota'
     }
 
+    //Susirandame currency ID pagal duota currency
+    const findCurrencyID = 'SELECT id FROM valiutos WHERE currency LIKE "' + currency + '"';
+    const [findings] = await connection.execute(findCurrencyID)
+
     //Iterpiame kliento pirmosios saskaitos informacija i saskaitos lentele.
     let generatedAccount = countryCode + Bank.createRandomNumber();
-    const insertSaskaitos = 'INSERT INTO saskaitos (id, user_id, bank_account_numbers, amount, currency)\
-    VALUES (NULL,"'+ result.insertId + '", "' + generatedAccount + '", 0 ,"' + currency + '")';
-    const [result3] = await connection.execute(insertSaskaitos);
-    if (result3.affectedRows !== 1) {
+    const insertSaskaitos = 'INSERT INTO saskaitos (id, user_id, bank_account_numbers, amount, currency_ID)\
+    VALUES (NULL,"'+ insertedKlientas.insertId + '", "' + generatedAccount + '", 0 ,"' + findings[0].id + '")';
+    const [insertedSaskaita] = await connection.execute(insertSaskaitos);
+    if (insertedSaskaita.affectedRows !== 1) {
         return 'ERROR: saskaita nebuvo sekmingai iregistruota'
     }
 
@@ -102,15 +113,19 @@ Bank.addAccount = async (connection, userID, currency) => {
 
     //Susirandame ir susiejame vartotojo (pagal ID) salies koda su atsitiktinai sukurtu saskaitos numeriu.
     const countryCode = 'SELECT country_code FROM klientai WHERE id=' + userID;
-    const [result1] = await connection.execute(countryCode)
-    let generatedAccount = result1[0].country_code + Bank.createRandomNumber();
+    const [selectedcountryCode] = await connection.execute(countryCode)
+    let generatedAccount = selectedcountryCode[0].country_code + Bank.createRandomNumber();
+
+    //Susirandame currency ID pagal duota currency
+    const findCurrencyID = 'SELECT id FROM valiutos WHERE currency LIKE "' + currency + '"';
+    const [findings] = await connection.execute(findCurrencyID)
 
     //Iterpiame saskaita i saskaitos lentele.
-    const insertSaskaitos = 'INSERT INTO saskaitos (id, user_id, bank_account_numbers, amount, currency)\
-    VALUES (NULL,"'+ userID + '", "' + generatedAccount + '", 0 ,"' + currency + '")';
-    const [result] = await connection.execute(insertSaskaitos);
+    const insertSaskaitos = 'INSERT INTO saskaitos (id, user_id, bank_account_numbers, amount, currency_ID)\
+    VALUES (NULL,"'+ userID + '", "' + generatedAccount + '", 0 ,"' + findings[0].id + '")';
+    const [insertedSaskaita] = await connection.execute(insertSaskaitos);
 
-    if (result.affectedRows !== 1) {
+    if (insertedSaskaita.affectedRows !== 1) {
         return 'ERROR: account failed to register'
     }
 
@@ -135,19 +150,23 @@ Bank.depositMoney = async (connection, accountID, amount) => {
 
     //Patikriname ar saskaita yra aktyvi.
     const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
-    const [check] = await connection.execute(isActive);
-    if (check.active === 'FALSE') {
+    const [verdict] = await connection.execute(isActive);
+    if (verdict.active === 'FALSE') {
         return `ERROR: account by ID = ${accountID} is not active!`
     }
 
     //Atnaujiname saskaitos likuti ir time_stamp
     const deposit = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
-    const [result] = await connection.execute(deposit);
-    const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=' + accountID;
-    const [result1] = await connection.execute(currency);
+    const [depositResult] = await connection.execute(deposit);
+
+    //Aiskinames koks currency tos saskaitos
+    const currencyID = 'SELECT saskaitos.currency_ID FROM saskaitos WHERE id=' + accountID;
+    const [selectedCurrencyID] = await connection.execute(currencyID);
+    const actualCurrency = 'SELECT currency FROM valiutos WHERE id=' + selectedCurrencyID[0].currency_ID;
+    const [selectedCurrency] = await connection.execute(actualCurrency);
 
 
-    if (result.affectedRows !== 1) {
+    if (depositResult.affectedRows !== 1) {
         return 'ERROR: account failed to update the balance.'
     }
 
@@ -156,9 +175,9 @@ Bank.depositMoney = async (connection, accountID, amount) => {
 
     //Issitraukiame informacija reikalinga return stringui.
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
-    const [result3] = await connection.execute(balance);
+    const [selectedBalance] = await connection.execute(balance);
 
-    return `${amount} ${result1[0].currency} have been added to bank account, by ID = ${accountID}, making a total of ${result3[0].amount} ${result1[0].currency}`
+    return `${amount} ${selectedCurrency[0].currency} have been added to bank account, by ID = ${accountID}, making a total of ${selectedBalance[0].amount} ${selectedCurrency[0].currency}`
 
 }
 
@@ -180,22 +199,22 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
 
     //Patikriname ar saskaita yra aktyvi.
     const isActive = 'SELECT saskaitos.active FROM saskaitos WHERE id=' + accountID;
-    const [check] = await connection.execute(isActive);
-    if (check[0].active !== 'TRUE') {
+    const [verdict] = await connection.execute(isActive);
+    if (verdict[0].active !== 'TRUE') {
         return `ERROR: account by ID = ${accountID} is not active!`
     }
 
     //Patikriname ar pakanka pinigu nuemimui.
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
-    const [result] = await connection.execute(currentBalance)
-    if (result[0].amount < amount) {
+    const [selectedCurrentBalance] = await connection.execute(currentBalance)
+    if (selectedCurrentBalance[0].amount < amount) {
         return 'ERROR: insuficient funds.'
     }
 
     //Atnaujiname saskaitos likuti.
     const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
-    const [result1] = await connection.execute(withdraw);
-    if (result1.affectedRows !== 1) {
+    const [withdrawResult] = await connection.execute(withdraw);
+    if (withdrawResult.affectedRows !== 1) {
         return 'ERROR: account failed to update the balance.'
     }
 
@@ -204,12 +223,14 @@ Bank.withdrawMoney = async (connection, accountID, amount) => {
     Transactions.withdraw(connection, accountID, amount)
 
     //Issitraukiame informacija reikalinga return stringui.
-    const currency = 'SELECT saskaitos.currency FROM saskaitos WHERE id=1';
-    const [result2] = await connection.execute(currency);
+    const currencyID = 'SELECT saskaitos.currency_ID FROM saskaitos WHERE id=' + accountID;
+    const [selectedCurrencyID] = await connection.execute(currencyID);
+    const actualCurrency = 'SELECT currency FROM valiutos WHERE id=' + selectedCurrencyID[0].currency_ID;
+    const [selectedCurrency] = await connection.execute(actualCurrency);
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
-    const [result3] = await connection.execute(balance);
+    const [selectedBalance] = await connection.execute(balance);
 
-    return `${amount} ${result2[0].currency} have been withdrawn from bank account, by ID = ${accountID}, making a total of ${result3[0].amount} ${result2[0].currency}`
+    return `${amount} ${selectedCurrency[0].currency} have been withdrawn from bank account, by ID = ${accountID}, making a total of ${selectedBalance[0].amount} ${selectedCurrency[0].currency}`
 
 }
 
@@ -286,10 +307,10 @@ Bank.deleteUser = async (connection, usersID) => {
 
     //Tikriname ar tam tikram userID priklausancios saskaitos turi pinigu.
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE user_id=' + usersID;
-    const [resultas] = await connection.execute(currentBalance);
+    const [result] = await connection.execute(currentBalance);
 
     let totalBalance = 0;
-    for (const balance of resultas) {
+    for (const balance of result) {
         totalBalance += Number.parseFloat(balance.amount)
     }
 
@@ -299,13 +320,13 @@ Bank.deleteUser = async (connection, usersID) => {
 
     //Issitraukiame varda/ pavarde return stringui.
     const name = 'SELECT firstname, lastname FROM klientai WHERE klientai.id =' + usersID;
-    const [result2] = await connection.execute(name)
+    const [selectedName] = await connection.execute(name)
 
     //Pakeiciame saskaitos aktyvuma i FALSE.
     const deleteAccSaskaitos = 'UPDATE saskaitos SET active = "FALSE" WHERE saskaitos.user_id =' + usersID;
-    const [result1] = await connection.execute(deleteAccSaskaitos)
+    const [deletedAccSaskaitos] = await connection.execute(deleteAccSaskaitos)
 
-    if (resultas.length !== result1.affectedRows) {
+    if (result.length !== deletedAccSaskaitos.affectedRows) {
         return 'ERROR: at least one bank account still exists, hence can not delete the user account.'
     }
 
@@ -318,6 +339,6 @@ Bank.deleteUser = async (connection, usersID) => {
 
 
 
-    return `Users, by ID = ${usersID} and name ${result2[0].firstname} ${result2[0].lastname}, account has been deleted.`
+    return `Users, by ID = ${usersID} and name ${selectedName[0].firstname} ${selectedName[0].lastname}, account has been deleted.`
 }
 module.exports = Bank;

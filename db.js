@@ -9,6 +9,7 @@ db.init = async ({ database, host, user }) => {
     await db.createBankAccountsTable(connection);
     await db.createDepositWithdrawTable(connection);
     await db.createTransactionsTable(connection);
+    await db.createCurrencyTable(connection)
 
     return connection;
 }
@@ -56,6 +57,22 @@ db.createBankClientTable = async (connection) => {
         return error;
     }
 }
+
+db.createCurrencyTable = async (connection) => {
+    try {
+        const sql = 'CREATE TABLE IF NOT EXISTS `Valiutos` (\
+                        `id` int(10) NOT NULL AUTO_INCREMENT,\
+                        `currency` char(5) COLLATE utf8_swedish_ci NOT NULL,\
+                        PRIMARY KEY(`id`)\
+                    ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
+        await connection.execute(sql);
+    } catch (error) {
+        console.log('Nepavyko sukurti banko valiutu lenteles');
+        console.log(error);
+        return error;
+    }
+}
+
 db.createBankAccountsTable = async (connection) => {
     try {
         const sql = 'CREATE TABLE IF NOT EXISTS `Saskaitos` (\
@@ -63,7 +80,7 @@ db.createBankAccountsTable = async (connection) => {
                         `user_id` int(10) NOT NULL,\
                         `bank_account_numbers` char(16) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
-                        `currency` char(10) COLLATE utf8_swedish_ci NOT NULL,\
+                        `currency_ID` int(1) NOT NULL,\
                         `active` char(5) COLLATE utf8_swedish_ci NOT NULL DEFAULT "TRUE",\
                         `open_date` TIMESTAMP NOT NULL,\
                         `close_date` TIMESTAMP NULL DEFAULT NULL,\
