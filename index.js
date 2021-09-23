@@ -12,8 +12,10 @@ app.init = async () => {
     });
 
     // LOGIC BELOW
-    const currency = await Bank.addCurrency(conn, 'EUR');
-    console.log(currency);
+    const currency1 = await Bank.addCurrency(conn, 'EUR');
+    console.log(currency1);
+    const currency2 = await Bank.addCurrency(conn, 'USD');
+    console.log(currency2);
 
     const create1 = await Bank.create(conn, 'EUR', 'Paulius', 'Dambrauskas', 'LT')
     console.log(create1);

@@ -57,10 +57,17 @@ Bank.create = async (connection, currency, firstname, lastname, countryCode) => 
         return `ERROR: not a valid currency`
     }
 
-    const availableCurrencies = ['EUR', 'USD'];
-    if (!availableCurrencies.includes(currency)) {
+    //Checking if currency is available in our bank.
+    const selectAvailableCurrencies = 'SELECT currency FROM valiutos';
+    const [availableCurrencies] = await connection.execute(selectAvailableCurrencies)
+    let currencyArray = [];
+    for (const instance of availableCurrencies) {
+        currencyArray.push(instance.currency)
+    }
+    if (!currencyArray.includes(currency)) {
         return 'ERROR: neleistina valiuta'
     }
+
 
     if (!Validation.isText(countryCode)) {
         return `ERROR: not a valid country code`
@@ -106,9 +113,16 @@ Bank.addAccount = async (connection, userID, currency) => {
     if (!Validation.isText(currency)) {
         return `ERROR: not a valid currency`
     }
-    const availableCurrencies = ['EUR', 'USD'];
-    if (!availableCurrencies.includes(currency)) {
-        return 'ERROR: currency type not allowed'
+
+    //Checking if currency is available in our bank.
+    const selectAvailableCurrencies = 'SELECT currency FROM valiutos';
+    const [availableCurrencies] = await connection.execute(selectAvailableCurrencies)
+    let currencyArray = [];
+    for (const instance of availableCurrencies) {
+        currencyArray.push(instance.currency)
+    }
+    if (!currencyArray.includes(currency)) {
+        return 'ERROR: neleistina valiuta'
     }
 
     //Susirandame ir susiejame vartotojo (pagal ID) salies koda su atsitiktinai sukurtu saskaitos numeriu.
