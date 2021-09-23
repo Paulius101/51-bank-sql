@@ -63,6 +63,7 @@ db.createCurrencyTable = async (connection) => {
         const sql = 'CREATE TABLE IF NOT EXISTS `Valiutos` (\
                         `id` int(10) NOT NULL AUTO_INCREMENT,\
                         `currency` char(5) COLLATE utf8_swedish_ci NOT NULL,\
+                        `rate` decimal(3,2) NOT NULL,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';
         await connection.execute(sql);
