@@ -17,22 +17,22 @@ app.init = async () => {
     const currency2 = await Bank.addCurrency(conn, 'USD', 0.85);
     console.log(currency2);
 
-    const create1 = await Bank.create(conn, 'USD', 'Paulius', 'Dambrauskas', 'LT')
+    const create1 = await Bank.create(conn, 'EUR', 'Paulius', 'Dambrauskas', 'LT')
     console.log(create1);
-    const create2 = await Bank.create(conn, 'USD', 'Kiaulius', 'Piniginis', 'UK')
+    const create2 = await Bank.create(conn, 'EUR', 'Kiaulius', 'Piniginis', 'UK')
     console.log(create2);
-    const create3 = await Bank.create(conn, 'USD', 'Riebalius', 'Aptekinis', 'AR')
+    const create3 = await Bank.create(conn, 'EUR', 'Riebalius', 'Aptekinis', 'AR')
     console.log(create3);
-    const create4 = await Bank.create(conn, 'USD', 'Lysius', 'Skurdzialis', 'CR')
+    const create4 = await Bank.create(conn, 'EUR', 'Lysius', 'Skurdzialis', 'CR')
     console.log(create4);
 
-    const addAccounts1 = await Bank.addAccount(conn, 1, 'USD')
+    const addAccounts1 = await Bank.addAccount(conn, 1, 'EUR')
     console.log(addAccounts1);
-    const addAccounts2 = await Bank.addAccount(conn, 2, 'USD')
+    const addAccounts2 = await Bank.addAccount(conn, 2, 'EUR')
     console.log(addAccounts2);
-    const addAccounts3 = await Bank.addAccount(conn, 3, 'USD')
+    const addAccounts3 = await Bank.addAccount(conn, 3, 'EUR')
     console.log(addAccounts3);
-    const addAccounts4 = await Bank.addAccount(conn, 4, 'USD')
+    const addAccounts4 = await Bank.addAccount(conn, 4, 'EUR')
     console.log(addAccounts4);
 
     const deposit1 = await Bank.depositMoney(conn, 1, 12, 'USD')
@@ -54,12 +54,12 @@ app.init = async () => {
 
     const withdraw1 = await Bank.withdrawMoney(conn, 1, 5, 'USD')
     console.log(withdraw1);
-    const withdraw2 = await Bank.withdrawMoney(conn, 2, 34, 'EUR')
+    const withdraw2 = await Bank.withdrawMoney(conn, 2, 46.8, 'USD')
     console.log(withdraw2);
     const withdraw3 = await Bank.withdrawMoney(conn, 6, 30, 'USD')
     console.log(withdraw3);
 
-    const transfer1 = await Bank.transferMoney(conn, 3, 1, 10)
+    const transfer1 = await Bank.transferMoney(conn, 2, 1, 0.22)
     console.log(transfer1);
 
 

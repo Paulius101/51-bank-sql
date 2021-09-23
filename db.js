@@ -103,6 +103,7 @@ db.createDepositWithdrawTable = async (connection) => {
                         `id` int(10) NOT NULL AUTO_INCREMENT,\
                         `account_id` int(10) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
+                        `currency` char(5) COLLATE utf8_swedish_ci NOT NULL,\
                         `type` char(10) NOT NULL,\
                         `time_stamp` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,\
                         PRIMARY KEY(`id`)\
@@ -121,6 +122,7 @@ db.createTransactionsTable = async (connection) => {
                         `sender_account_id` int(10) NOT NULL,\
                         `receiver_account_id` int(10) NOT NULL,\
                         `amount` decimal(10,2) NOT NULL,\
+                        `currency` char(5) COLLATE utf8_swedish_ci NOT NULL,\
                         `time_stamp` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,\
                         PRIMARY KEY(`id`)\
                     ) ENGINE = InnoDB DEFAULT CHARSET = utf8 COLLATE = utf8_swedish_ci';

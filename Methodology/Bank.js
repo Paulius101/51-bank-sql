@@ -197,18 +197,27 @@ Bank.depositMoney = async (connection, accountID, amount, currency) => {
     const [rate] = await connection.execute(selectedRate);
     const rateResult = rate[0].rate;
 
+    // console.log(selectedCurrency[0].currency);
+    // console.log(currency);
+    if (currency === selectedCurrency[0].currency) {
+        //Atnaujiname saskaitos likuti.
+        const deposit = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
+        const [depositResult] = await connection.execute(deposit);
+        if (depositResult.affectedRows !== 1) {
+            return 'ERROR: account failed to update the balance.'
+        }
+    }
 
-
-    //Atnaujiname saskaitos likuti.
-    const deposit1 = 'UPDATE saskaitos SET amount = amount +"' + rateResult + '"*"' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
-    const [depositResult1] = await connection.execute(deposit1);
-
-    if (depositResult1.affectedRows !== 1) {
-        return 'ERROR: account failed to update the balance.'
+    if (currency !== selectedCurrency[0].currency) {
+        const deposit = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '"*"' + rateResult + '" WHERE saskaitos.id =' + accountID;
+        const [depositResult] = await connection.execute(deposit);
+        if (depositResult.affectedRows !== 1) {
+            return 'ERROR: account failed to update the balance.'
+        }
     }
 
     //Irasome sia operacija i tam skirta lentele.
-    Transactions.deposit(connection, accountID, amount);
+    Transactions.deposit(connection, accountID, amount, currency);
 
     //Issitraukiame informacija reikalinga return stringui.
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
@@ -252,6 +261,7 @@ Bank.withdrawMoney = async (connection, accountID, amount, currency) => {
         return 'ERROR: neleistina valiuta'
     }
 
+    //Susirandame kokia currency laikomi pinigai saskaitoje.
     const currencyID = 'SELECT saskaitos.currency_ID FROM saskaitos WHERE id=' + accountID;
     const [selectedCurrencyID] = await connection.execute(currencyID);
     const actualCurrency = 'SELECT currency FROM valiutos WHERE id=' + selectedCurrencyID[0].currency_ID;
@@ -265,25 +275,36 @@ Bank.withdrawMoney = async (connection, accountID, amount, currency) => {
     //Patikriname ar pakanka pinigu nuemimui.
     const currentBalance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
     const [selectedCurrentBalance] = await connection.execute(currentBalance)
-    if (selectedCurrentBalance[0].amount < amount * rateResult) {
+    // console.log(selectedCurrentBalance[0].amount);
+    // console.log(amount * rateResult);
+
+    if (selectedCurrency[0].currency === currency && selectedCurrentBalance[0].amount < amount) {
+        return 'ERROR: insuficient funds.'
+    }
+    if (selectedCurrency[0].currency !== currency && selectedCurrentBalance[0].amount < amount * rateResult) {
         return 'ERROR: insuficient funds.'
     }
 
 
-
-    //Atnaujiname saskaitos likuti.
-    const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '"*"' + rateResult + '" WHERE saskaitos.id =' + accountID;
-    const [withdrawResult] = await connection.execute(withdraw);
-    if (withdrawResult.affectedRows !== 1) {
-        return 'ERROR: account failed to update the balance.'
+    if (currency === selectedCurrency[0].currency) {
+        //Atnaujiname saskaitos likuti.
+        const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id =' + accountID;
+        const [withdrawResult] = await connection.execute(withdraw);
+        if (withdrawResult.affectedRows !== 1) {
+            return 'ERROR: account failed to update the balance.'
+        }
     }
 
-
-
-
+    if (currency !== selectedCurrency[0].currency) {
+        const withdraw = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '"*"' + rateResult + '" WHERE saskaitos.id =' + accountID;
+        const [withdrawResult] = await connection.execute(withdraw);
+        if (withdrawResult.affectedRows !== 1) {
+            return 'ERROR: account failed to update the balance.'
+        }
+    }
 
     //Irasome sia operacija i tam skirta lentele.
-    Transactions.withdraw(connection, accountID, amount)
+    Transactions.withdraw(connection, accountID, amount, currency)
 
     //Issitraukiame informacija reikalinga return stringui.
     const balance = 'SELECT saskaitos.amount FROM saskaitos WHERE id=' + accountID;
@@ -333,15 +354,11 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
         return 'ERROR: insuficient funds.'
     }
 
-
     //Atnaujiname tiek gavejo tiek siuntejo saskaitu likucius.
     const sender = 'UPDATE saskaitos SET amount = amount - "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + sendAccountID;
     await connection.execute(sender);
     const receiver = 'UPDATE saskaitos SET amount = amount + "' + amount.toFixed(2) + '" WHERE saskaitos.id=' + receivAccountID;
     await connection.execute(receiver);
-
-    //Irasome si pervedima i tam skirta lentele.
-    Transactions.transfer(connection, sendAccountID, receivAccountID, amount)
 
 
     //Issitraukiame reikalinga informacija return stringui.
@@ -354,6 +371,9 @@ Bank.transferMoney = async (connection, sendAccountID, receivAccountID, amount) 
     const [selectedCurrencyID] = await connection.execute(currencyID);
     const actualCurrency = 'SELECT currency FROM valiutos WHERE id=' + selectedCurrencyID[0].currency_ID;
     const [selectedCurrency] = await connection.execute(actualCurrency);
+
+    //Irasome si pervedima i tam skirta lentele.
+    Transactions.transfer(connection, sendAccountID, receivAccountID, amount, selectedCurrency[0].currency)
 
     return `${amount} ${selectedCurrency[0].currency} have been sent from ${info[0].num1} to ${info1[0].num2}`
 }
